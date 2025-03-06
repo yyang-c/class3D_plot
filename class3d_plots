@@ -1,0 +1,37 @@
+#!/bin/bash
+echo "Requires gnuplot and eog. Plots class distributions for specified number of classes. Run from Relion project folder"
+#exec 2> /dev/null
+if [ $# -ne 1 ]
+then
+	echo "Usage: $0 job(job number of Class3D job)"
+	exit
+fi
+cd Class3D/$1
+rm -rf plot_out*
+tillblank=$(egrep -o "\-\-K [^ ]* " note.txt)
+n_classes=${tillblank/*K/}
+echo "$n_classes classes"
+echo "set term png" > plot.p
+#echo "set title $1" > plot.p
+#echo "show title" > plot.p
+#echo "set output \"class_plot.png\"" >> plot.p
+echo "set output \"$1.png\"" >> plot.p
+echo "set key inside left top" >> plot.p
+echo -n "plot " >> plot.p
+for i in $( seq 1 $n_classes )
+do
+	currentclass=$(printf "%03d" "$i")
+#	echo "I is $iteration"
+	filename=$(printf "%s%d" "plot_out" $i)
+#	echo $filename
+	pattern=$(printf "_class%s.mrc" "$currentclass")
+#	echo $pattern
+	grep "$pattern" run_it???_model.star >> $filename
+	grep -s "$pattern" run_ct*_it???_model.star >> $filename
+	plotcommand=$(printf "\'%s\' using 2 with linesp," $filename)
+	echo -n $plotcommand >> plot.p
+done
+gnuplot plot.p
+#eog $1.png 2>&1 >/dev/null &
+display $1.png 2>&1 >/dev/null &
+cd ../..
